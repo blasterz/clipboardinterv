@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from pymongo import MongoClient
 import re
+import math
 
 """
 
@@ -37,23 +38,12 @@ def main():
     records = db.records
     #for oldField, newField in fields.items():
     
-    i = 0
     for index, row in df.iterrows():
         doc = {}
         for oldField, newField in fields.items():
             doc[newField] = row[oldField]
-        print(doc['salary'])
         doc['salary'] = normalizeSalary(doc['salary'])
-        print(doc['salary'])
-        print()
-        i += 1
-        if i == 3:
-            break    
-    
-    str = 'me at $63,000'
-    print(str)
-    salary = normalizeSalary(str)
-    print(salary)
+        print(doc['salary']) 
     #records.insert(doc)
     #for header in df:
         #print(header)
@@ -61,15 +51,46 @@ def main():
         #break
     #print(df['Full-Time/Part-Time?'])
 
-def normalizeSalary(data):
+def normalizeSalary(data, minSalary = 3, maxSalary = 200):
+    monthsPerYear, daysPerMonth, daysPerWeek, hoursPerDay = 12, 21.6666, 5, 8
     regex = r'\d+\.?\d*'
     # remove commas for examples like "$60,000 salary"
-    data = data.replace(',', '')
+    data = data.lower().replace(',', '')
     values = re.findall(regex, data)
     # append 0 in case no salary is matched by regex
     values.append('0')
     # return max value (e.g. $24/hr + $4/hr for nights will return 24)
-    return max([float(v) for v in values])
+    salary =  max([float(v) for v in values])
+    divide = 1
+    # daily salary
+    if findOneKeyword(data, ['day', 'daily', 'diem']):
+        divide = hoursPerDay
+    # hourly salary
+    elif salary < maxSalary:
+        divide = 1
+    # annual salary
+    elif salary > 20000 or findOneKeyword(data,
+            ['yr', 'year', 'yearly', 'annual', 'annually']):
+        divide = monthsPerYear * daysPerMonth * hoursPerDay
+    elif findOneKeyword(data, ['month', 'monthly']):
+        divide = daysPerMonth * hoursPerDay
+    # bi-weekly
+    elif findOneKeyword(data, ['bi', 'other', '2', 'two', 'weeks']):
+        divide = daysPerWeek * 2 *  hoursPerDay
+    # weekly
+    else:
+        divide = daysPerWeek * hoursPerDay
+    salary /= divide
+    # hourly salary validation
+    if salary < minSalary or salary > maxSalary:
+        salary = 0
+    return round(salary, 2)
+
+def findOneKeyword(data, keywords):
+    for keyword in keywords:
+        if data.find(keyword) != -1:
+            return True
+    return False
 
 if __name__ == "__main__":
     main()
