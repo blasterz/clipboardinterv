@@ -36,20 +36,13 @@ def main():
     }
 
     records = db.records
-    #for oldField, newField in fields.items():
     
     for index, row in df.iterrows():
         doc = {}
         for oldField, newField in fields.items():
             doc[newField] = row[oldField]
         doc['salary'] = normalizeSalary(doc['salary'])
-        print(doc['salary']) 
-    #records.insert(doc)
-    #for header in df:
-        #print(header)
-        #print(df[header])
-        #break
-    #print(df['Full-Time/Part-Time?'])
+        records.insert(doc)
 
 def normalizeSalary(data, minSalary = 3, maxSalary = 200):
     monthsPerYear, daysPerMonth, daysPerWeek, hoursPerDay = 12, 21.6666, 5, 8
