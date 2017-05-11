@@ -1,0 +1,45 @@
+Ambulatory Care Nurse
+Cardiac Care Nurse
+Cardiac Cath Lab Nurse
+Case Management Nurse
+Clinical Nurse Leader
+Clinical Nurse Specialist
+Correctional Facility Nurse
+Critical Care Nurse
+Dermatology Nurse
+Emergency Nurse
+Gastroenterology Nursing
+Gerontological Nurse Practitioner
+Hematology Nurse
+Home Health Care Nurse
+Hospice Nurse
+Independent Nurse Contractor
+Labor and Delivery Nurse
+Lactation Consultant
+Long-Term Care Nurse
+Managed Care Nurse
+Medical-Surgical Nurse
+Neonatal Intensive Care Nurse
+Nephrology Nurse
+Neuroscience Nurse
+Obstetrics Nurse, Gynecology Nurse
+Occupational Health Nurse
+Oncology Nurse
+Orthopaedic Nurse
+Pediatric Nurse
+Perianesthesia Nurse
+Perinatal Nurse
+Perioperative (Surgical) Nurse
+Psychiatric Nurse
+Psychiatric Nurse Practitioner
+Radiology Nurse
+Rehabilitation Nurse
+Reproductive Nurse
+School Nurse
+Substance Abuse Nurse
+Telemetry Nurse
+Trauma Nurse
+Travel Nurse
+Urologic Nurse
+Nurse Practitioner
+Other
