@@ -22,6 +22,7 @@ Check server/models/Record.js for an example of the schema.
 """
 
 def main():
+    loadCityLocations()
     client = MongoClient('mongodb://localhost:27017/')
     db = client['clipboardinterview']
     df = pd.read_csv(join(dirname(__file__), '../data/projectnurse.csv'))
@@ -40,7 +41,84 @@ def main():
             doc[newField] = row[oldField]
         doc['patientNurseRatio'] = normalizePatientNurseRatio(doc['patientNurseRatio'])
         doc['salary'] = normalizeSalary(doc['salary'])
+        doc['location'] = getLocation(doc['location'])
         db.records.insert(doc)
+    
+
+def loadCityLocations():
+    global locations
+    locations = {}
+    df = pd.read_csv(join(dirname(__file__), '../data/city_locations.csv'))
+    for index, row in df.iterrows():
+        city = row['city'].lower()
+        doc = {
+            'state' : row['state'].lower(),
+            'lat' : row['latitude'],
+            'lng' : row['longitude'],
+        }
+        if city not in locations:
+            locations[city] = [doc]
+        else:
+            locations[city].append(doc)
+
+def getLocation(data):
+    global locations
+    empty = {'lng' : 0, 'lat' : 0}
+    result = empty
+    data = data.lower().strip().replace('.','')
+    names = data.split(',')
+    city = names[0].lower().strip()
+    state = ''
+    # simple case 'San francisco, ca'
+    if len(names) > 1:
+        state = names[1].lower().strip()
+        result = getCoords(city, state)
+    else:
+        names = names[0].split(' ')
+        newCity = ''
+        newState = ''
+        if len(names) > 1:
+            newState = names[-1]
+            newCity = ' '.join(names[0:-1])
+        else:
+            newCity = names[0]
+        # case 'San francisco ca'
+        if result == empty:
+            result = getCoords(newCity, newState)
+        # case 'San Francisco'
+        if result == empty:
+            result = getCoords(data, '')
+        # case 'San Francisco ojio'
+        if result == empty:
+            result = getCoords(newCity, '')
+    return result
+
+# try to get the coordinates with given city and state
+def getCoords(city, state):
+    global locations
+    result = {'lng' : 0, 'lat' : 0}
+    if city in locations:
+        possibleLocations = locations[city]
+        for location in possibleLocations:
+            if matchStates(location['state'], state):
+                result = location
+                break
+    result = {'lng' : result['lng'], 'lat' : result['lat'] }
+    return result
+
+# s1 is always a 2 letter like 'ca' while s2 can be 'ca' or 'california'
+def matchStates(s1, s2):
+    if s2 == '':
+        return True
+    s1 = s1.lower()
+    s2 = s2.lower()
+    if s1 == s2:
+        return True
+    if len(s2) > 2:
+        if s2[0] == s1[0] and s2.find(s1[1]) != -1:
+            return True
+    return False
+
 
 def normalizePatientNurseRatio(data):
     if not isinstance(data, str):
