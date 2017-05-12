@@ -25,7 +25,6 @@ def main():
     client = MongoClient('mongodb://localhost:27017/')
     db = client['clipboardinterview']
     df = pd.read_csv(join(dirname(__file__), '../data/projectnurse.csv'))
-    
     fields = {
         "How many years of experience do you have?" : 'experience',
         "What's your highest level of education?" : 'education',
@@ -34,25 +33,19 @@ def main():
         "What (City, State) are you located in?" : "location",
         "What is the Nurse - Patient Ratio?" : "patientNurseRatio"
     }
-
-    records = db.records
-    
+    db.records.remove({})
     for index, row in df.iterrows():
         doc = {}
         for oldField, newField in fields.items():
             doc[newField] = row[oldField]
-        print(doc['patientNurseRatio'])
         doc['patientNurseRatio'] = normalizePatientNurseRatio(doc['patientNurseRatio'])
-        print(doc['patientNurseRatio'])
-        print()
         doc['salary'] = normalizeSalary(doc['salary'])
-        #records.insert(doc)
+        db.records.insert(doc)
 
 def normalizePatientNurseRatio(data):
     if not isinstance(data, str):
         return 0.0
     maxRatio = 0.0
-    regex = r'\d+[:\-,\.]?\d*'
     # treat cases like 4:1
     regex = r'\d+:\d+'
     values = re.findall(regex, data)
@@ -68,18 +61,24 @@ def normalizePatientNurseRatio(data):
     values = re.findall(regex, data)
     for s in values:
         vals = [float(v) for v in re.findall(r'\d+\.?\d*', s)]
-        ratio = float(sum(vals)) / float(len(vals))
-        maxRatio = max(maxRatio, ratio)
-    # treat cases like: 1 nurse to 5 patients
+        # no cases like '7-5'
+        if vals[0] < vals[1]:
+            ratio = float(sum(vals)) / float(len(vals))
+            maxRatio = max(maxRatio, ratio)
+    # other cases
     if maxRatio == 0.0:
         regex = r'\d+\.?\d*'
         values = re.findall(regex, data)
         values = [float(v) for v in values]
-        if len(values) == 1:
+        # treat case when only one number is found, but avoid things like '7-May'
+        if len(values) == 1 and len(re.findall(r'\d+\-\D*', data)) == 0:
             maxRatio = values[0]
+        # treat cases like: 1 nurse to 5 patients
         elif len(values) > 1 and 1 in values:
             maxRatio = max(values)
-    return maxRatio
+    if maxRatio > 0 and maxRatio < 1:
+        maxRatio = 1.0 / maxRatio
+    return round(maxRatio, 1)
 
 def normalizeSalary(data, minSalary = 3, maxSalary = 200):
     monthsPerYear, daysPerMonth, daysPerWeek, hoursPerDay = 12, 21.6666, 5, 8
