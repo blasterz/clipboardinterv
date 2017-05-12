@@ -41,8 +41,45 @@ def main():
         doc = {}
         for oldField, newField in fields.items():
             doc[newField] = row[oldField]
+        print(doc['patientNurseRatio'])
+        doc['patientNurseRatio'] = normalizePatientNurseRatio(doc['patientNurseRatio'])
+        print(doc['patientNurseRatio'])
+        print()
         doc['salary'] = normalizeSalary(doc['salary'])
-        records.insert(doc)
+        #records.insert(doc)
+
+def normalizePatientNurseRatio(data):
+    if not isinstance(data, str):
+        return 0.0
+    maxRatio = 0.0
+    regex = r'\d+[:\-,\.]?\d*'
+    # treat cases like 4:1
+    regex = r'\d+:\d+'
+    values = re.findall(regex, data)
+    for s in values:
+        vals = [float(v) for v in re.findall(r'\d+\.?\d*', s)]
+        if min(vals) > 0:
+            ratio = max(vals) / min(vals)
+        else:
+            ratio = 0
+        maxRatio = max(maxRatio, ratio)
+    # treat cases like 5-7
+    regex = r'\d+\-\d+'
+    values = re.findall(regex, data)
+    for s in values:
+        vals = [float(v) for v in re.findall(r'\d+\.?\d*', s)]
+        ratio = float(sum(vals)) / float(len(vals))
+        maxRatio = max(maxRatio, ratio)
+    # treat cases like: 1 nurse to 5 patients
+    if maxRatio == 0.0:
+        regex = r'\d+\.?\d*'
+        values = re.findall(regex, data)
+        values = [float(v) for v in values]
+        if len(values) == 1:
+            maxRatio = values[0]
+        elif len(values) > 1 and 1 in values:
+            maxRatio = max(values)
+    return maxRatio
 
 def normalizeSalary(data, minSalary = 3, maxSalary = 200):
     monthsPerYear, daysPerMonth, daysPerWeek, hoursPerDay = 12, 21.6666, 5, 8
